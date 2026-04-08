@@ -2,6 +2,18 @@
 ## Chai Kok Cheng 217463
 A secure backend API for a digital banking system using Java Spring Boot, handling user authentication, fund transfers, and transaction history.
 
+**The Problem: Concurrency & Stateless Security**
+Building a secure digital banking REST API from scratch involves strict constraints. The biggest technical challenge with digital money is the race condition (or "double-spend") problem: if two concurrent transfer requests deduct funds from the same account at the exact same millisecond, they both might read the same initial balance and succeed, leading to unauthorized negative balances. Additionally, the system needed a scalable, stateless authentication mechanism.
+
+**The Solution: A Robust Spring Boot Architecture**
+I engineered a secure transaction processing backend using Java Spring Boot, PostgreSQL, and Spring Security.
+- **Security:** Implemented JSON Web Token (JWT) authentication tied to Role-Based Access Control (RBAC), establishing secure, stateless REST API endpoints.
+- **Transactions:** Architected a core `TransferService` wrapped in Spring's `@Transactional` to guarantee ACID compliance, ensuring that if any part of a multi-step fund transfer fails, all database changes are completely rolled back.
+
+**The Roadblocks: Overcoming the Concurrency Bug**
+- **What broke:** During stress-testing, I discovered that the standard `@Transactional` isolation wasn't enough. Concurrent threads were reading the account balance simultaneously before the first transaction committed its update, successfully bypassing my "insufficient funds" checks.
+- **How I fixed it:** I dove into database concurrency mechanisms and enforced row-level locking via Spring Data JPA's `@Lock(LockModeType.PESSIMISTIC_WRITE)`. This instructed PostgreSQL to lock the specific account row during the balance check. Concurrent transfer requests now automatically queue up and wait until the row lock is released. This single change completely eradicated the concurrency bug, guaranteeing 100% financial accuracy under load.
+
 ## Features
 
 - **JWT Authentication**: Secure login with JSON Web Tokens
